@@ -3,10 +3,13 @@ package auto.configuration;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 
 /**
@@ -18,7 +21,7 @@ public class AutoConfigurationAgent {
     }
 
     public static void agentmain(String args, Instrumentation inst) {
-        System.out.println("AutoConfigurationAgent agentmain start...");
+        log("AutoConfigurationAgent agentmain start...");
         Map<String, Map<String, String>> paramsMap = parseArgs(args);
         for (Map.Entry<String, Map<String, String>> entry : paramsMap.entrySet()) {
             if (enable(entry.getValue())) {
@@ -31,11 +34,17 @@ public class AutoConfigurationAgent {
                 }
             }
         }
-        System.out.println("AutoConfigurationAgent agentmain end...");
+        log("AutoConfigurationAgent agentmain end...");
     }
 
     public static boolean enable(Map<String, String> property) {
         return "true".equalsIgnoreCase(property.getOrDefault("enable", "false"));
+    }
+
+    public static void log(String format, Object... args) {
+        String message = String.format(format, args);
+        String datetime = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN);
+        System.out.println(datetime + " " + message);
     }
 
     private static Map<String, Map<String, String>> parseArgs(String args) {
@@ -73,7 +82,7 @@ public class AutoConfigurationAgent {
         private ClassLoader classLoader = this.getClass().getClassLoader();
 
         public LoggerLevelTransformer(Map<String, String> property, Instrumentation inst) {
-            System.out.println("LoggerLevelTransformer is running...");
+            log("LoggerLevelTransformer is running...");
 
             try {
                 for (Class<?> loadedClass : inst.getAllLoadedClasses()) {
@@ -104,22 +113,22 @@ public class AutoConfigurationAgent {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                System.out.println("LOGGER_LEVEL: " + LOGGER_LEVEL);
+                log("logger level: %s", LOGGER_LEVEL);
             }
         }
 
         public void config() {
             if (loggerType == null) {
-                System.out.println("logger type is not support");
+                log("logger type is not support");
                 return;
             } else {
-                System.out.println("logger type: " + loggerType.name());
+                log("logger type: %s", loggerType.name());
             }
 
             for (Map.Entry<String, String> entry : LOGGER_LEVEL.entrySet()) {
                 String loggerName = entry.getKey();
                 String loggerLevel = entry.getValue();
-                System.out.println("transform config: " + entry);
+                log("transform config: %s", entry);
 
                 if (LoggerType.LOGBACK.equals(loggerType)) {
                     try {
