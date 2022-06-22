@@ -1,16 +1,15 @@
 package auto.configuration;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.FileUtil;
 
 /**
  * @author zengzhifei
@@ -43,7 +42,8 @@ public class AutoConfigurationAgent {
 
     public static void log(String format, Object... args) {
         String message = String.format(format, args);
-        String datetime = DateUtil.format(new Date(), DatePattern.NORM_DATETIME_MS_PATTERN);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        String datetime = sdf.format(new Date());
         System.out.println(datetime + " " + message);
     }
 
@@ -105,8 +105,10 @@ public class AutoConfigurationAgent {
             try {
                 String acPath = property.getOrDefault("ac.path", System.getProperty("user.dir"));
                 String loggerFile = acPath + "/logger.ac";
-                List<String> loggers = FileUtil.readLines(loggerFile, StandardCharsets.UTF_8);
-                for (String logger : loggers) {
+                FileInputStream inputStream = new FileInputStream(loggerFile);
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                String logger;
+                while ((logger = bufferedReader.readLine()) != null && !logger.isEmpty()) {
                     String[] loggerLevel = logger.split(":");
                     LOGGER_LEVEL.put(loggerLevel[0], loggerLevel.length > 1 ? loggerLevel[1] : null);
                 }
