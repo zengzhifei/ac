@@ -7,9 +7,7 @@ import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author zengzhifei
@@ -77,6 +75,7 @@ public class AutoConfigurationAgent {
     }
 
     private static class LoggerLevelTransformer {
+        private final Set<String> LEVELS = new HashSet<>(Arrays.asList("OFF", "FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", "ALL"));
         private final Map<String, String> LOGGER_LEVEL = new HashMap<>();
         private LoggerType loggerType = null;
         private ClassLoader classLoader = this.getClass().getClassLoader();
@@ -104,13 +103,15 @@ public class AutoConfigurationAgent {
 
             try {
                 String acPath = property.getOrDefault("ac.path", System.getProperty("user.dir"));
+                String globalLevel = property.getOrDefault("level", null);
                 String loggerFile = acPath + "/logger.ac";
                 FileInputStream inputStream = new FileInputStream(loggerFile);
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                 String logger;
                 while ((logger = bufferedReader.readLine()) != null && !logger.isEmpty()) {
                     String[] loggerLevel = logger.split(":");
-                    LOGGER_LEVEL.put(loggerLevel[0], loggerLevel.length > 1 ? loggerLevel[1] : null);
+                    String level = globalLevel != null && LEVELS.contains(globalLevel.toUpperCase()) ? globalLevel : (loggerLevel.length > 1 ? loggerLevel[1] : null);
+                    LOGGER_LEVEL.put(loggerLevel[0], LEVELS.contains(level) ? level : "INFO");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
